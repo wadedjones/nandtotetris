@@ -32,5 +32,66 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-	//// Replace this comment with your code.
+
+		/* getting all the instructions from the input */
+		Mux16(a=false,
+					b=instruction,
+					sel=instruction[15],
+					out[0]=cJGT,
+					out[1]=cJEQ,
+					out[2]=cJLT,
+					out[3]=cDestM,
+					out[3]=writeM,
+					out[4]=cDestD,
+					out[5]=cDestA,
+					out[6]=aluNO,
+					out[7]=aluF,
+					out[8]=aluNY,
+					out[9]=aluZY,
+					out[10]=aluNX,
+					out[11]=aluZX,
+					out[12]=cAorM,
+					out[15]=cType
+				);
+					
+
+
+		ALU(x=xIn, 
+				y=yIn,
+				zx=aluZX,
+				nx=aluNX,
+				zy=aluZY,
+				ny=aluNY,
+				f=aluF,
+				no=aluNO,
+				out=aluOut, out=outM,
+				zr=zerop,
+				ng=negp);
+
+		Or(a=zerop, b=negp, out=lteq);
+		Not(in=lteq, out=posp);
+
+		/* A register logic */
+		Mux16(a=instruction, b=aluOut, sel=cType, out=aMuxOut);
+		Mux16(a=aRegOut, b=inM, sel=cAorM, out=yIn);
+
+		/* loading A Register */
+		Not(in=cType, out=notcType);
+		Or(a=notcType, b=cDestA, out=loadA);
+
+		ARegister(in=aMuxOut, load=loadA, out=aRegOut, out[0..14]=addressM);
+
+		/* loading D Register */
+		DRegister(in=aluOut, load=cDestD, out=xIn);
+
+		/* jump logic */
+
+		And(a=cJEQ, b=zerop, out=JEQ);
+		And(a=cJLT, b=negp, out=JLT);
+		And(a=cJGT, b=posp, out=JGT);
+
+		Or(a=JEQ, b=JLT, out=JLE);
+		Or(a=JGT, b=JLE, out=jmp);
+
+		PC(in=aRegOut, inc=true, load=jmp, reset=reset, out[0..14]=pc, out[15]=false);
 }
