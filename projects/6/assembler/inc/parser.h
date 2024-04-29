@@ -1,10 +1,12 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "symbols.h"
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-#define ERR -1
+#define ERR 0b11111111
 
 typedef enum { A, C } c_type;
 
@@ -26,7 +28,6 @@ typedef struct instruction {
   unsigned short jump : 3;
 } instruction;
 
-void convert_bytes(instruction *inst);
 instruction *parse_instruction(char *line, unsigned short *comp,
                                unsigned char *dest, unsigned char *jump,
                                unsigned char *a_val);

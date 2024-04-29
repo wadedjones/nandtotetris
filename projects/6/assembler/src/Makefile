@@ -1,15 +1,15 @@
 TARGET = main
-CC = gcc
+CC = clang
 
 SRCS := $(wildcard *.c)
-OBJDIR = build
+OBJDIR = ../build
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
-DEPDIR = dep
+DEPDIR = ../dep
 DEPS := $(SRCS:%.c=$(DEPDIR)/%.d)
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
-CFLAGS = -Wall -Wextra
+CFLAGS = -g -Wall -Wextra
 # LDLIBS = -lraylib
 DUP_DIR = mkdir -p $(@D)
 

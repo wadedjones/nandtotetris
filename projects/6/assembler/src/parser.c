@@ -4,29 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "parser.h"
-
-/* clang-format off */
-#define PATTERN "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n"
-#define BTB(byte)  \
-  ((byte) & 0x8000 ? '1' : '0'), \
-  ((byte) & 0x4000 ? '1' : '0'), \
-  ((byte) & 0x2000 ? '1' : '0'), \
-  ((byte) & 0x1000 ? '1' : '0'), \
-  ((byte) & 0x800 ? '1' : '0'), \
-  ((byte) & 0x400 ? '1' : '0'), \
-  ((byte) & 0x200 ? '1' : '0'), \
-  ((byte) & 0x100 ? '1' : '0'), \
-  ((byte) & 0x80 ? '1' : '0'), \
-  ((byte) & 0x40 ? '1' : '0'), \
-  ((byte) & 0x20 ? '1' : '0'), \
-  ((byte) & 0x10 ? '1' : '0'), \
-  ((byte) & 0x08 ? '1' : '0'), \
-  ((byte) & 0x04 ? '1' : '0'), \
-  ((byte) & 0x02 ? '1' : '0'), \
-  ((byte) & 0x01 ? '1' : '0')
-
-/* clang-format on */
+#include "../inc/parser.h"
 
 c_table c_comp = {28,
                   {
@@ -62,20 +40,6 @@ c_table c_jump = {8,
                       {"JLE", 6},
                       {"JMP", 7},
                   }};
-
-void convert_bytes(instruction *inst) {
-  if (inst->type == A) {
-    printf(PATTERN, BTB(inst->literal));
-  }
-  if (inst->type == C) {
-    unsigned short result = 0;
-    result |= 0b111 << 13;
-    result |= inst->comp << 6;
-    result |= inst->dest << 3;
-    result |= inst->jump;
-    printf(PATTERN, BTB(result));
-  }
-}
 
 instruction *parse_instruction(char *line, unsigned short *comp,
                                unsigned char *dest, unsigned char *jump,
@@ -152,6 +116,7 @@ void check_c_type(char *line, unsigned short *comp, unsigned char *dest,
     *comp = get_value(&c_comp, cpos);
     *dest = get_value(&c_dest, line);
   } else {
+    *a_val = 0;
     *dest = 0;
     line = trim_whitespace(line);
     *comp = get_value(&c_comp, line);
@@ -166,7 +131,7 @@ unsigned short get_value(c_table *ct, char *val) {
       return ct->table[i].data;
     }
   }
-  return 0;
+  return ERR;
 }
 
 bool is_instruction(char *line) {
@@ -174,7 +139,27 @@ bool is_instruction(char *line) {
 
   if (line[0] == '@') {
     return true;
+  } else {
+    unsigned short *comp = malloc(sizeof(comp));
+    unsigned char *dest = malloc(sizeof(dest));
+    unsigned char *jump = malloc(sizeof(jump));
+    unsigned char *a_val = malloc(sizeof(a_val));
+    check_c_type(line, comp, dest, jump, a_val);
+
+    if (*comp != ERR) {
+      free(comp);
+      free(dest);
+      free(jump);
+      free(a_val);
+      return true;
+    }
+
+    free(comp);
+    free(dest);
+    free(jump);
+    free(a_val);
   }
+
   return false;
 }
 
