@@ -7,10 +7,6 @@
 char buf[BUFSIZE];
 
 void assemble(FILE *fp_in, FILE *fp_out) {
-  unsigned short *comp = malloc(sizeof(comp));
-  unsigned char *dest = malloc(sizeof(dest));
-  unsigned char *jump = malloc(sizeof(jump));
-  unsigned char *a_val = malloc(sizeof(a_val));
   instruction *result = malloc(sizeof(instruction));
   symbol_table st;
   symbol_table_init(&st);
@@ -25,21 +21,13 @@ void assemble(FILE *fp_in, FILE *fp_out) {
   while (fgets(buf, BUFSIZE, fp_in)) {
     buf[strcspn(buf, "\n")] = 0;
     symbol_replace(&st, buf);
-    *comp = 0;
-    *dest = 0;
-    *jump = 0;
-    *a_val = 0;
-    if ((result = parse_instruction(buf, comp, dest, jump, a_val)) == NULL) {
+    if ((result = parse_instruction(buf)) == NULL) {
       continue;
     }
 
     convert_bytes(result, fp_out);
   }
 
-  free(comp);
-  free(dest);
-  free(jump);
-  free(a_val);
   free(result);
   free(st.symbols);
 }

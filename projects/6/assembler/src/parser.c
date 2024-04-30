@@ -41,9 +41,7 @@ c_table c_jump = {8,
                       {"JMP", 7},
                   }};
 
-instruction *parse_instruction(char *line, unsigned short *comp,
-                               unsigned char *dest, unsigned char *jump,
-                               unsigned char *a_val) {
+instruction *parse_instruction(char *line) {
 
   line = format_line(line);
 
@@ -66,14 +64,18 @@ instruction *parse_instruction(char *line, unsigned short *comp,
     result->literal = val;
     return result;
   } else {
-    check_c_type(line, comp, dest, jump, a_val);
+    unsigned short comp;
+    unsigned char dest;
+    unsigned char jump;
+    unsigned char a_val;
+    check_c_type(line, &comp, &dest, &jump, &a_val);
 
     instruction *result = malloc(sizeof(instruction));
     result->type = C;
-    result->comp = *comp;
-    result->comp |= *a_val << 6;
-    result->dest = *dest;
-    result->jump = *jump;
+    result->comp = comp;
+    result->comp |= a_val << 6;
+    result->dest = dest;
+    result->jump = jump;
 
     return result;
   }
@@ -124,9 +126,7 @@ void check_c_type(char *line, unsigned short *comp, unsigned char *dest,
 }
 
 unsigned short get_value(c_table *ct, char *val) {
-  int i;
-
-  for (i = 0; i < ct->comp_len; i++) {
+  for (int i = 0; i < ct->comp_len; i++) {
     if (strcmp(ct->table[i].value, val) == 0) {
       return ct->table[i].data;
     }
@@ -140,24 +140,16 @@ bool is_instruction(char *line) {
   if (line[0] == '@') {
     return true;
   } else {
-    unsigned short *comp = malloc(sizeof(comp));
-    unsigned char *dest = malloc(sizeof(dest));
-    unsigned char *jump = malloc(sizeof(jump));
-    unsigned char *a_val = malloc(sizeof(a_val));
-    check_c_type(line, comp, dest, jump, a_val);
+    unsigned short comp;
+    unsigned char dest;
+    unsigned char jump;
+    unsigned char a_val;
 
-    if (*comp != ERR) {
-      free(comp);
-      free(dest);
-      free(jump);
-      free(a_val);
+    check_c_type(line, &comp, &dest, &jump, &a_val);
+
+    if (comp != ERR) {
       return true;
     }
-
-    free(comp);
-    free(dest);
-    free(jump);
-    free(a_val);
   }
 
   return false;

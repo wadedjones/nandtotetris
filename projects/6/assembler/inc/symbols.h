@@ -2,7 +2,7 @@
 #define SYMBOLS_H
 
 #define NUM_DEFAULT_SYMBOLS 23
-#define INIT_TABLE_SIZE 2000
+#define INIT_TABLE_SIZE 100
 
 // symbol not found error
 #define SNF 0xffff

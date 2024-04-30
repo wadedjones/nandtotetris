@@ -17,15 +17,16 @@ void symbol_table_init(symbol_table *st) {
 
 void symbol_table_resize(symbol_table *st) {
   symbol *vals = st->symbols;
-  size_t total_symbols_old = st->total_symbols;
+  int total_symbols_old = st->total_symbols;
 
   st->table_len = st->table_len * 2 + 1;
   st->symbols = calloc(st->table_len, sizeof(symbol));
   st->total_symbols = 0;
 
-  for (size_t i = 0; i < total_symbols_old; i++) {
-    st->symbols[i] = vals[i];
+  for (int i = 0; i < total_symbols_old; i++) {
+    symbol_add(st, vals[i].var, &vals[i].addr);
   }
+  free(vals);
 }
 
 void symbol_parse(char *line, symbol_table *st) {
@@ -53,14 +54,13 @@ void symbol_add(symbol_table *st, char *line, unsigned short *address) {
       return;
     }
   }
-  st->symbols[st->total_symbols - 1].addr = *address;
-  strcpy(st->symbols[st->total_symbols - 1].var, line);
+  st->symbols[st->total_symbols].addr = *address;
+  strcpy(st->symbols[st->total_symbols].var, line);
   st->total_symbols++;
 
-  /* resize symbol table (doesn't seem to work yet) */
-  // if (st->total_symbols + 1 == st->table_len) {
-  //   symbol_table_resize(st);
-  // }
+  if (st->total_symbols + 1 == st->table_len) {
+    symbol_table_resize(st);
+  }
 }
 
 void symbol_replace(symbol_table *st, char *line) {

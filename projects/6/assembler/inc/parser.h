@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define ERR 0b11111111
+#define ERR 0xFF
 
 typedef enum { A, C } c_type;
 
@@ -28,9 +28,7 @@ typedef struct instruction {
   unsigned short jump : 3;
 } instruction;
 
-instruction *parse_instruction(char *line, unsigned short *comp,
-                               unsigned char *dest, unsigned char *jump,
-                               unsigned char *a_val);
+instruction *parse_instruction(char *line);
 unsigned short get_value(c_table *ct, char *val);
 void check_c_type(char *line, unsigned short *comp, unsigned char *dest,
                   unsigned char *jump, unsigned char *a_val);
