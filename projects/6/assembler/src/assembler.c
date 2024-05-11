@@ -9,7 +9,7 @@ char buf[BUFSIZE];
 void assemble(FILE *fp_in, FILE *fp_out) {
   instruction *result = malloc(sizeof(instruction));
   symbol_table st;
-  symbol_table_init(&st);
+  symbol_table_init(&st, default_symbols);
 
   while (fgets(buf, BUFSIZE, fp_in) != NULL) {
     buf[strcspn(buf, "\n")] = 0;
@@ -27,9 +27,7 @@ void assemble(FILE *fp_in, FILE *fp_out) {
 
     convert_bytes(result, fp_out);
   }
-
-  free(result);
-  free(st.symbols);
+  symbol_table_free(&st);
 }
 
 void convert_bytes(instruction *inst, FILE *fp_out) {

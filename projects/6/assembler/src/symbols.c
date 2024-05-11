@@ -1,32 +1,91 @@
 #include "../inc/symbols.h"
 #include "../inc/parser.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-void symbol_table_init(symbol_table *st) {
+static uint64_t hash_key(const char *key) {
+  uint64_t hash = FNV_OFFSET;
+  for (const char *p = key; *p; p++) {
+    hash ^= (uint64_t)(unsigned char)(*p);
+    hash *= FNV_PRIME;
+  }
+  return hash;
+}
+
+void symbol_table_init(symbol_table *st, symbol *default_symbols) {
   st->symbols = calloc(INIT_TABLE_SIZE, sizeof(symbol));
   st->table_len = INIT_TABLE_SIZE;
   st->total_symbols = NUM_DEFAULT_SYMBOLS;
 
-  for (int i = 0; i < st->total_symbols; i++) {
-    strcpy(st->symbols[i].var, default_symbols[i].var);
-    st->symbols[i].addr = default_symbols[i].addr;
+  for (int i = 0; i < NUM_DEFAULT_SYMBOLS; i++) {
+    symbol_add(st, default_symbols[i].key, &default_symbols[i].addr);
   }
 }
 
-void symbol_table_resize(symbol_table *st) {
-  symbol *vals = st->symbols;
-  int total_symbols_old = st->total_symbols;
+void symbol_table_free(symbol_table *st) {
+  for (int i = 0; i < st->table_len; i++) {
+    free((void *)st->symbols[i].key);
+  }
+  free(st->symbols);
+  // free(st);
+}
 
-  st->table_len = st->table_len * 2 + 1;
+char *symbol_add(symbol_table *st, char *line, unsigned short *addr) {
+  uint64_t hash = hash_key(line);
+  size_t index = (size_t)(hash & (uint64_t)(st->table_len - 1));
+
+  if (st->total_symbols >= st->table_len / 2) {
+    symbol_table_expand(st);
+  }
+
+  while (st->symbols[index].key != NULL) {
+    if (strcmp(line, st->symbols[index].key) == 0) {
+      return line;
+    }
+    index++;
+    if (index >= (size_t)st->table_len) {
+      index = 0;
+    }
+  }
+  line = strdup(line);
+  st->symbols[index].key = (char *)line;
+  st->symbols[index].addr = *addr;
+  st->total_symbols++;
+  return st->symbols[index].key;
+}
+
+void symbol_table_expand(symbol_table *st) {
+  size_t new_len = st->table_len * 2;
+  symbol *old_symbols = st->symbols;
+
+  st->table_len = new_len;
   st->symbols = calloc(st->table_len, sizeof(symbol));
   st->total_symbols = 0;
 
-  for (int i = 0; i < total_symbols_old; i++) {
-    symbol_add(st, vals[i].var, &vals[i].addr);
+  for (size_t i = 0; i < (size_t)st->table_len / 2; i++) {
+    if (old_symbols[i].key != NULL) {
+      symbol_add(st, old_symbols[i].key, &old_symbols[i].addr);
+    }
   }
-  free(vals);
+  free(old_symbols);
+}
+
+unsigned short symbol_find(symbol_table *st, char *key) {
+  uint64_t hash = hash_key(key);
+  size_t index = (size_t)(hash & (uint64_t)(st->table_len - 1));
+
+  while (st->symbols[index].key != NULL) {
+    if (strcmp(key, st->symbols[index].key) == 0) {
+      return st->symbols[index].addr;
+    }
+    index++;
+    if (index >= (size_t)st->table_len) {
+      index = 0;
+    }
+  }
+  return SNF;
 }
 
 void symbol_parse(char *line, symbol_table *st) {
@@ -47,56 +106,32 @@ void symbol_parse(char *line, symbol_table *st) {
   }
 }
 
-void symbol_add(symbol_table *st, char *line, unsigned short *address) {
-
-  for (int i = 0; i < st->total_symbols; i++) {
-    if (strcmp(st->symbols[i].var, line) == 0) {
-      return;
-    }
-  }
-  st->symbols[st->total_symbols].addr = *address;
-  strcpy(st->symbols[st->total_symbols].var, line);
-  st->total_symbols++;
-
-  if (st->total_symbols + 1 == st->table_len) {
-    symbol_table_resize(st);
-  }
-}
-
 void symbol_replace(symbol_table *st, char *line) {
-  static unsigned short var_address = 16;
+  static unsigned short key_address = 16;
   line = format_line(line);
   unsigned short address;
 
   if (line[0] == '@' && !(line[1] <= '9' && line[1] >= '0')) {
     address = symbol_find(st, line + 1);
     if (address == SNF) {
-      address = var_address;
+      address = key_address;
       symbol_add(st, line + 1, &address);
-      var_address++;
+      key_address++;
     }
     sprintf(line + 1, "%d", address);
   }
 }
 
-unsigned short symbol_find(symbol_table *st, char *line) {
-
-  for (int i = 0; i < st->total_symbols; i++) {
-    if ((strcmp(st->symbols[i].var, line)) == 0) {
-      return st->symbols[i].addr;
+void symbol_print(symbol_table *st) {
+  for (int i = 0; i < st->table_len; i++) {
+    if (st->symbols[i].key != NULL) {
+      printf("i: %d, key: %s, addr: %d\n", i, st->symbols[i].key,
+             st->symbols[i].addr);
     }
   }
-  return SNF;
 }
 
-void symbol_print(symbol_table *st) {
-  for (int i = 0; i < st->total_symbols; i++) {
-    printf("var: %s, addr: %d\n", st->symbols[i].var, st->symbols[i].addr);
-  }
-  printf("\nTotal Symbols: %d\n", st->total_symbols);
-}
-
-const symbol default_symbols[] = {
+symbol default_symbols[] = {
     {"SP", 0},   {"LCL", 1},         {"ARG", 2},     {"THIS", 3}, {"THAT", 4},
     {"R0", 0},   {"R1", 1},          {"R2", 2},      {"R3", 3},   {"R4", 4},
     {"R5", 5},   {"R6", 6},          {"R7", 7},      {"R8", 8},   {"R9", 9},

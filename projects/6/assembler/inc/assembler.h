@@ -5,6 +5,8 @@
 #include <stdio.h>
 
 #define BUFSIZE 100
+
+/* formats decimal number to binary from type instruction */
 /* clang-format off */
 #define PATTERN "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n"
 #define BTB(byte)  \
@@ -25,7 +27,13 @@
   ((byte) & 0x02 ? '1' : '0'), \
   ((byte) & 0x01 ? '1' : '0')
 
+/* takes two passes through the file
+ * first pass finds and stores all symbols and variables in symbol table
+ * second pass replaces symbols and variables with corresponding addresses
+ * and writes each line to the file fp_out */
 void assemble(FILE *fp_in, FILE *fp_out);
+
+/* uses the above byte to binary pattern to print machine code */
 void convert_bytes(instruction *inst, FILE *fp_out);
 
 #endif
